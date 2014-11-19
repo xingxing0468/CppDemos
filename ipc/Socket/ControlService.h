@@ -14,6 +14,7 @@
 #include "sys/types.h"
 #include "sys/un.h"
 #include <vector>
+#include <arpa/inet.h>
 namespace ControlService
 {
 	enum IPC_RC
