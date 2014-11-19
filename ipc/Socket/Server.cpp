@@ -10,12 +10,12 @@ int main(int argc, char *argv[])
 	ControlService::IpcTracer::ProcessName = argv[0];
 	int serverSockFd = 0, clientSockFd = 0;
 	sockaddr_un serverSockAddr, clientSockAddr;
-	serverSockAddr.sun_family = AF_LOCAL;
 	const char* socketAddrStr = ControlService::SOCKET_ADDR.c_str();
 	int on = 1, clientSockAddrSize;
 	FILE *fp = NULL;
-	char receiveBuf[DEFAULT_MAX_SOCKET_MSG_LENGTH];
-	std::string receiveStr;
+	char receiveBuf[DEFAULT_MAX_SOCKET_MSG_LENGTH] = "Origin Buffer";
+	memset(&serverSockAddr, sizeof(sockaddr_un), 0);
+	serverSockAddr.sun_family = AF_LOCAL;
 	memcpy(&serverSockAddr.sun_path, socketAddrStr, strlen(socketAddrStr) + 1);
 	if((serverSockFd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0)
 	{
@@ -56,29 +56,20 @@ int main(int argc, char *argv[])
 	ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Client Connetion Accepted....");	
 
 	
-	for(int i = 0; i < 20; i++)
+	while(1)
 	{
-		ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Sleeping..."); 
-		sleep(1);
+		ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Waiting For Message From Client Side....");		
+		if((recv(clientSockFd, receiveBuf, sizeof(receiveBuf), 0)) < 0)
+		{
+			ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET, IpcTracer::ACTION_RECEIVE, errno);
+			rc = 1000 * IpcTracer::ACTION_RECEIVE + errno;
+			goto Exit;
+		}
+		std::string receiveStr(receiveBuf);
+		ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Received Message: [" +  receiveStr + "]");
+		ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Sleeping 5 seconds...");
+		sleep(5);
 	}
-
-	if(!(fp = fdopen(serverSockFd, "wr")))
-	{
-		ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET, IpcTracer::ACTION_OPEN_FD, errno);
-		rc = 1000 * IpcTracer::ACTION_OPEN_FD + errno;
-		goto Exit;
-	}
-	
-	if(fread(receiveBuf, DEFAULT_MAX_SOCKET_MSG_LENGTH, sizeof(char), fp) < 0)
-	{
-		ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET, IpcTracer::ACTION_READ_FP, errno);
-		rc = 1000 * IpcTracer::ACTION_READ_FP + errno;
-		goto Exit;
-	}
-	
-	receiveStr = receiveBuf;
-	ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Received Message: [" +  receiveStr + "]");
-	
 Exit:
 	if(close(serverSockFd) < 0)
 	{
