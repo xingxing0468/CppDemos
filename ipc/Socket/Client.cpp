@@ -11,29 +11,23 @@ int main(int argc, char *argv[])
 
 	int serverSockFd = 0, clientSockFd = 0;
         sockaddr_un serverSockAddr, clientSockAddr;
-        clientSockAddr.sun_family = AF_LOCAL;
         const char* socketAddrStr = ControlService::SOCKET_ADDR.c_str();
         int on = 1, clientSockAddrSize;
         FILE *fp = NULL;
         const char* sendBuf = "This is Hello From Client!";
 	std::string sendStr(sendBuf);
+        clientSockAddr.sun_family = AF_LOCAL;
 	memcpy(&clientSockAddr.sun_path, socketAddrStr, strlen(socketAddrStr) + 1);
-        if((clientSockFd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0)
+        if((clientSockFd = socket(AF_LOCAL, SOCK_DGRAM, 0)) < 0)
         {
                 ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET,     IpcTracer::ACTION_CREATE, errno);
                 rc = 1000 * IpcTracer::ACTION_CREATE + errno;
                 goto Exit;
         }	
-        if((connect(clientSockFd, (sockaddr*)(&clientSockAddr), sizeof(clientSockAddr))) < 0)
+	if(sendto(clientSockFd, sendBuf, strlen(sendBuf) + 1, 0, (sockaddr*)(&clientSockAddr), (socklen_t)sizeof(sockaddr_un)) < 0)
         {
-                ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET,     IpcTracer::ACTION_CONNECT, errno);
-                rc = 1000 * IpcTracer::ACTION_CONNECT + errno;
-                goto Exit;
-        }
-	if(send(clientSockFd, sendBuf, strlen(sendBuf) + 1, 0) < 0)
-        {
-                ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET,     IpcTracer::ACTION_SEND, errno);
-                rc = 1000 * IpcTracer::ACTION_SEND + errno;
+                ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET,     IpcTracer::ACTION_SEND_TO, errno);
+                rc = 1000 * IpcTracer::ACTION_SEND_TO + errno;
                 goto Exit;
         }
 	ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Message: [" + sendStr + "] sent");

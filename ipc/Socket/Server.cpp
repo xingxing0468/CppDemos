@@ -11,13 +11,13 @@ int main(int argc, char *argv[])
 	int serverSockFd = 0, clientSockFd = 0;
 	sockaddr_un serverSockAddr, clientSockAddr;
 	const char* socketAddrStr = ControlService::SOCKET_ADDR.c_str();
-	int on = 1, clientSockAddrSize;
+	int on = 1, clientSockAddrSize, serverSockAddrSize = sizeof(sockaddr_un);
 	FILE *fp = NULL;
 	char receiveBuf[DEFAULT_MAX_SOCKET_MSG_LENGTH] = "Origin Buffer";
 	memset(&serverSockAddr, sizeof(sockaddr_un), 0);
 	serverSockAddr.sun_family = AF_LOCAL;
 	memcpy(&serverSockAddr.sun_path, socketAddrStr, strlen(socketAddrStr) + 1);
-	if((serverSockFd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0)
+	if((serverSockFd = socket(AF_LOCAL, SOCK_DGRAM, 0)) < 0)
 	{
 		ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET, IpcTracer::ACTION_CREATE, errno);
 		rc = 1000 * IpcTracer::ACTION_CREATE + errno;
@@ -39,30 +39,14 @@ int main(int argc, char *argv[])
 		rc = 1000 * IpcTracer::ACTION_BIND + errno;
 		goto Exit;
 	}
-
-	if(listen(serverSockFd, DEFAULT_MAX_SOCKET_CLIENT_NUM) < 0)
-	{
-		ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET, IpcTracer::ACTION_LISTEN, errno);
-		rc = 1000 * IpcTracer::ACTION_LISTEN + errno;
-		goto Exit;
-	}
-	ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Blocking for accept connect from client....");
-	if((clientSockFd = accept(serverSockFd, (sockaddr*)(&clientSockAddr), (socklen_t*)&clientSockAddrSize)) < 0)
-	{
-		ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET, IpcTracer::ACTION_ACCEPT, errno);
-		rc = 1000 * IpcTracer::ACTION_ACCEPT + errno;
-		goto Exit;
-	}
-	ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Client Connetion Accepted....");	
-
 	
 	while(1)
 	{
 		ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Waiting For Message From Client Side....");		
-		if((recv(clientSockFd, receiveBuf, sizeof(receiveBuf), 0)) < 0)
+		if(recvfrom(serverSockFd, receiveBuf, sizeof(receiveBuf), 0, (sockaddr*)(&serverSockAddr), (socklen_t*)&serverSockAddrSize) < 0)
 		{
-			ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET, IpcTracer::ACTION_RECEIVE, errno);
-			rc = 1000 * IpcTracer::ACTION_RECEIVE + errno;
+			ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET, IpcTracer::ACTION_RECEIVE_FROM, errno);
+			rc = 1000 * IpcTracer::ACTION_RECEIVE_FROM + errno;
 			goto Exit;
 		}
 		std::string receiveStr(receiveBuf);
