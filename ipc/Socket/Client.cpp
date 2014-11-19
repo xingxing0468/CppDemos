@@ -39,26 +39,32 @@ int main(int argc, char *argv[])
         }
 	
 					
-        if((write(clientSockFd, sendBuf, strlen(sendBuf) + 1)) < 0)
+        if((fwrite(sendBuf, strlen(sendBuf) + 1, sizeof(char), fp)) < 0)
         {
-                ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET,     IpcTracer::ACTION_WRITE_FD, errno);
-                rc = 1000 * IpcTracer::ACTION_WRITE_FD + errno;
+                ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET,     IpcTracer::ACTION_WRITE_FP, errno);
+                rc = 1000 * IpcTracer::ACTION_WRITE_FP + errno;
                 goto Exit;
         }
         
+        if((fflush(fp)) < 0)
+        {
+                ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET,     IpcTracer::ACTION_FLUSH_FP, errno);
+                rc = 1000 * IpcTracer::ACTION_FLUSH_FP + errno;
+                goto Exit;
+        }
 	ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Client Writed Content: [" + sendStr + "] to Socket Fd");
 	if((fclose(fp)) != 0)
         {
-                ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET,     IpcTracer::ACTION_CLOSE_FD, errno);
-                rc = 1000 * IpcTracer::ACTION_CLOSE_FD + errno;
+                ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET,     IpcTracer::ACTION_CLOSE_FP, errno);
+                rc = 1000 * IpcTracer::ACTION_CLOSE_FP + errno;
                 goto Exit;
         }
 Exit:
-	if((close(clientSockFd)) != 0)
-        {
-                ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET,     IpcTracer::ACTION_CLOSE_FD, errno);
-                rc = 1000 * IpcTracer::ACTION_CLOSE_FD + errno;
-        }
+//	if((close(clientSockFd)) != 0)
+//        {
+//                ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET,     IpcTracer::ACTION_CLOSE_FD, errno);
+//                rc = 1000 * IpcTracer::ACTION_CLOSE_FD + errno;
+//        }
 	return rc;
 
 }

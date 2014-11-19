@@ -14,6 +14,8 @@ int main(int argc, char *argv[])
 	const char* socketAddrStr = ControlService::SOCKET_ADDR.c_str();
 	int on = 1, clientSockAddrSize;
 	FILE *fp = NULL;
+	char receiveBuf[DEFAULT_MAX_SOCKET_MSG_LENGTH];
+	std::string receiveStr;
 	memcpy(&serverSockAddr.sun_path, socketAddrStr, strlen(socketAddrStr) + 1);
 	if((serverSockFd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0)
 	{
@@ -53,12 +55,29 @@ int main(int argc, char *argv[])
 	}
 	ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Client Connetion Accepted....");	
 
-	if(!(fd = fdopen(clientSockFd, "r")))
+	
+	for(int i = 0; i < 20; i++)
 	{
-		ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET, IpcTracer::ACTIION_OPEN_FD, errno);
+		ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Sleeping..."); 
+		sleep(1);
+	}
+
+	if(!(fp = fdopen(serverSockFd, "wr")))
+	{
+		ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET, IpcTracer::ACTION_OPEN_FD, errno);
 		rc = 1000 * IpcTracer::ACTION_OPEN_FD + errno;
 		goto Exit;
 	}
+	
+	if(fread(receiveBuf, DEFAULT_MAX_SOCKET_MSG_LENGTH, sizeof(char), fp) < 0)
+	{
+		ControlService::IpcTracer::Error(IpcTracer::CATEGORY_SOCKET, IpcTracer::ACTION_READ_FP, errno);
+		rc = 1000 * IpcTracer::ACTION_READ_FP + errno;
+		goto Exit;
+	}
+	
+	receiveStr = receiveBuf;
+	ControlService::IpcTracer::WriteLine(IpcTracer::CATEGORY_SOCKET, IpcTracer::SERVERITY_INFO, "Received Message: [" +  receiveStr + "]");
 	
 Exit:
 	if(close(serverSockFd) < 0)
