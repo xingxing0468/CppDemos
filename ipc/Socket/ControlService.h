@@ -38,6 +38,7 @@ namespace ControlService
 		DEFAULT_MQ_MSG_FLAGS		= 0, 
 		DEFAULT_SECOND_TIMEOUT		= 5,
 		DEFAULT_MAX_SOCKET_CLIENT_NUM	= 5,
+		DEFAULT_MAX_SOCKET_MSG_LENGTH	= 256,
 	};
 	
 	enum APP_NAME_INDEX
@@ -45,12 +46,14 @@ namespace ControlService
 		APP_NAME_SERVER,
 		APP_NAME_CLIENT,
 	};
-	const static std::string Category[]			= {"Message Queue", 	"SOCKET"		      };
-	const static std::string Action[]			= {"NONE",		"Create",		"Bind",
-								   "Set Option",	"Listen",		"Accept",
-								   "Connect",		"Unlink",		"Close",
-								   "Remove",		"Open File Descriptor", "Close File Descriptor",
-								   "Write File Descriptor",};
+	const static std::string Category[]			= {"Message Queue", 		"SOCKET"		      };
+	const static std::string Action[]			= {"NONE",			"Create",			"Bind",
+								   "Set Option",		"Listen",			"Accept",
+								   "Connect",			"Send",				"Send To",
+								   "Receive",			"Receive From",			"Unlink",
+					         		   "Close",			"Remove",			"Open File Descriptor",
+								   "Close File",		"Read File",		 	"Write FILE",
+								   "Flush File",		"CLose File"};
 	const static std::string APP_NAME[]			= {"Server",	"Client"};
 	const static std::string MQ_NAME		 	= "/MyMessageQueue";
 	const static std::string SOCKET_ADDR		 	= "MySocketAddr";
@@ -78,12 +81,19 @@ namespace ControlService
 			ACTION_LISTEN,
 			ACTION_ACCEPT,
 			ACTION_CONNECT,
+			ACTION_SEND,
+			ACTION_SEND_TO,
+			ACTION_RECEIVE,
+			ACTION_RECEIVE_FROM,
 			ACTION_UNLINK,
 			ACTION_CLOSE,
 			ACTION_REMOVE,
 			ACTION_OPEN_FD,
 			ACTION_CLOSE_FD,
-			ACTION_WRITE_FD,
+			ACTION_READ_FP,
+			ACTION_WRITE_FP,
+			ACTION_FLUSH_FP,
+			ACTION_CLOSE_FP		= 15
 		};
 
 		enum SERVERITY
